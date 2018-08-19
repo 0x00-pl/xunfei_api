@@ -30,7 +30,7 @@ file_piece_sice = 10485760
 # 要是转写的文件路径
 uplaod_file_path = 'output.mp3'
 
-base_header = {'Content-type': 'application/x-www-form-urlencoded',  'Accept': 'application/json;charset=utf-8'}
+base_header = {'Content-type': 'application/x-www-form-urlencoded', 'Accept': 'application/json;charset=utf-8'}
 
 # ——————————————————转写可配置参数————————————————
 # 转写类型
@@ -46,8 +46,10 @@ max_alternatives = 0
 # 子用户标识
 suid = ''
 
+
 def prepare():
     return lfasr_post(api_prepare, urllib.parse.urlencode(generate_request_param(api_prepare)), base_header)
+
 
 def upload(taskid):
     file_object = open(uplaod_file_path, 'rb')
@@ -58,10 +60,11 @@ def upload(taskid):
             content = file_object.read(file_piece_sice)
             if not content or len(content) == 0:
                 break
-            response = post_multipart_formdata(generate_request_param(api_upload, taskid, sig.getNextSliceId()), content)
+            response = post_multipart_formdata(generate_request_param(api_upload, taskid, sig.getNextSliceId()),
+                                               content)
             if json.loads(response).get('ok') != 0:
                 # 上传分片失败
-                print('uplod slice fail, response: '+ response)
+                print('uplod slice fail, response: ' + response)
                 return False
             print('uoload slice ' + str(index) + ' success')
             index += 1
@@ -71,23 +74,29 @@ def upload(taskid):
 
     return True
 
+
 def merge(taskid):
     return lfasr_post(api_merge, urllib.parse.urlencode(generate_request_param(api_merge, taskid)), base_header)
 
+
 def get_progress(taskid):
-    return lfasr_post(api_get_progress, urllib.parse.urlencode(generate_request_param(api_get_progress, taskid)), base_header)
+    return lfasr_post(api_get_progress, urllib.parse.urlencode(generate_request_param(api_get_progress, taskid)),
+                      base_header)
+
 
 def get_result(taskid):
-    return lfasr_post(api_get_result, urllib.parse.urlencode(generate_request_param(api_get_result, taskid)), base_header)
+    return lfasr_post(api_get_result, urllib.parse.urlencode(generate_request_param(api_get_result, taskid)),
+                      base_header)
+
 
 # 根据请求的api来生成请求参数
-def generate_request_param(apiname, taskid = None, slice_id = None):
+def generate_request_param(apiname, taskid=None, slice_id=None):
     # 生成签名与时间戳
     ts = str(int(time.time()))
     tmp = app_id + ts
     hl = hashlib.md5()
     hl.update(tmp.encode(encoding='utf-8'))
-    signa = base64.b64encode(hmac.new(secret_key,  hl.hexdigest(), sha1).digest())
+    signa = base64.b64encode(hmac.new(secret_key, hl.hexdigest(), sha1).digest())
 
     param_dict = {}
 
@@ -132,10 +141,12 @@ def generate_request_param(apiname, taskid = None, slice_id = None):
         param_dict['task_id'] = taskid
     return param_dict
 
+
 def get_file_msg(filepath):
-    (parentpath,tempfilename) = os.path.split(filepath);
-    (shotname,extension) = os.path.splitext(tempfilename);
-    return parentpath,shotname,extension
+    (parentpath, tempfilename) = os.path.split(filepath);
+    (shotname, extension) = os.path.splitext(tempfilename);
+    return parentpath, shotname, extension
+
 
 def lfasr_post(apiname, requestbody, header):
     conn = http.client.HTTPConnection(lfasr_host)
@@ -145,9 +156,11 @@ def lfasr_post(apiname, requestbody, header):
     conn.close()
     return data
 
+
 def post_multipart_formdata(strparams, content):
     BOUNDARY = '----------%s' % ''.join(random.sample('0123456789abcdef', 15))
-    multi_header = {'Content-type': 'multipart/form-data; boundary=%s' % BOUNDARY, 'Accept': 'application/json;charset=utf-8'}
+    multi_header = {'Content-type': 'multipart/form-data; boundary=%s' % BOUNDARY,
+                    'Accept': 'application/json;charset=utf-8'}
     CRLF = '\r\n'
     L = []
     for key in list(strparams.keys()):
@@ -169,8 +182,10 @@ def post_multipart_formdata(strparams, content):
 
     return data
 
+
 class SliceIdGenerator:
     """slice id生成器"""
+
     def __init__(self):
         self.__ch = 'aaaaaaaaa`'
 
@@ -180,15 +195,16 @@ class SliceIdGenerator:
         while j >= 0:
             cj = ch[j]
             if cj != 'z':
-                ch = ch[:j] + chr(ord(cj) + 1) + ch[j+1:]
+                ch = ch[:j] + chr(ord(cj) + 1) + ch[j + 1:]
                 break
             else:
-                ch = ch[:j] + 'a' + ch[j+1:]
-                j = j -1
+                ch = ch[:j] + 'a' + ch[j + 1:]
+                j = j - 1
         self.__ch = ch
         return self.__ch
 
-def  request_lfasr_result():
+
+def request_lfasr_result():
     # 1.预处理
     pr = prepare()
     prepare_result = json.loads(pr)
@@ -202,7 +218,7 @@ def  request_lfasr_result():
     # 2.分片上传文件
     if upload(taskid):
         print('uplaod success')
-    else :
+    else:
         print('uoload fail')
 
     # 3.文件合并
@@ -220,7 +236,7 @@ def  request_lfasr_result():
         if progress_dic['err_no'] != 0 and progress_dic['err_no'] != 26605:
             print('task error: ' + progress_dic['failed'])
             return
-        else :
+        else:
             data = progress_dic['data']
             task_status = json.loads(data)
             if task_status['status'] == 9:
@@ -234,6 +250,7 @@ def  request_lfasr_result():
     # 5.获取结果
     lfasr_result = json.loads(get_result(taskid))
     print("result: " + lfasr_result['data'])
+
 
 if __name__ == '__main__':
     request_lfasr_result()
