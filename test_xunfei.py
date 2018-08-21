@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import sys
 import hashlib
+import sys
 from hashlib import sha1
 import hmac
 import base64
@@ -11,9 +11,6 @@ import os
 import random
 
 import secrets
-
-reload(sys)
-sys.setdefaultencoding('ISO-8859-1')
 
 lfasr_host = 'raasr.xfyun.cn'
 # 讯飞开放平台的appid和secret_key
@@ -28,7 +25,7 @@ api_get_result = '/getResult'
 # 文件分片大下52k
 file_piece_sice = 10485760
 # 要是转写的文件路径
-uplaod_file_path = 'output.mp3'
+uplaod_file_path = sys.argv[1]
 
 base_header = {'Content-type': 'application/x-www-form-urlencoded', 'Accept': 'application/json;charset=utf-8'}
 
@@ -96,7 +93,7 @@ def generate_request_param(apiname, taskid=None, slice_id=None):
     tmp = app_id + ts
     hl = hashlib.md5()
     hl.update(tmp.encode(encoding='utf-8'))
-    signa = base64.b64encode(hmac.new(secret_key, hl.hexdigest(), sha1).digest())
+    signa = base64.b64encode(hmac.new(secret_key, hl.hexdigest().encode(encoding='utf-8'), sha1).digest())
 
     param_dict = {}
 
@@ -106,7 +103,7 @@ def generate_request_param(apiname, taskid=None, slice_id=None):
         parentpath, shotname, extension = get_file_msg(uplaod_file_path)
         file_name = shotname + extension
         temp1 = file_len / file_piece_sice
-        slice_num = file_len / file_piece_sice + (0 if (file_len % file_piece_sice == 0) else 1)
+        slice_num = int(round(file_len / file_piece_sice + (0 if (file_len % file_piece_sice == 0) else 1)))
 
         param_dict['app_id'] = app_id
         param_dict['signa'] = signa
@@ -158,24 +155,27 @@ def lfasr_post(apiname, requestbody, header):
 
 
 def post_multipart_formdata(strparams, content):
-    BOUNDARY = '----------%s' % ''.join(random.sample('0123456789abcdef', 15))
-    multi_header = {'Content-type': 'multipart/form-data; boundary=%s' % BOUNDARY,
-                    'Accept': 'application/json;charset=utf-8'}
-    CRLF = '\r\n'
+    BOUNDARY = b'----------%s' % b''.join(random.sample([b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'a', b'b', b'c', b'd', b'e', b'f'], 15))
+    multi_header = {b'Content-type': b'multipart/form-data; boundary=%s' % BOUNDARY,
+                    b'Accept': b'application/json;charset=utf-8'}
+    CRLF = b'\r\n'
     L = []
     for key in list(strparams.keys()):
-        L.append('--' + BOUNDARY)
-        L.append('Content-Disposition: form-data; name="%s"' % key)
-        L.append('')
-        L.append(strparams[key])
+        L.append(b'--' + BOUNDARY)
+        L.append(b'Content-Disposition: form-data; name="%s"' % key.encode('utf8'))
+        L.append(b'')
+        L.append(strparams[key].encode('utf8') if isinstance(strparams[key], str) else strparams[key])
 
-    L.append('--' + BOUNDARY)
-    L.append('Content-Disposition: form-data; name="%s"; filename="%s"' % ('content', strparams.get('slice_id')))
-    L.append('Content-Type: application/octet-stream')
-    L.append('')
+    L.append(b'--' + BOUNDARY)
+    L.append(b'Content-Disposition: form-data; name="%s"; filename="%s"' % (
+        b'content', strparams.get('slice_id').encode('utf8')
+        if isinstance(strparams[key], str) else strparams.get('slice_id')
+    ))
+    L.append(b'Content-Type: application/octet-stream')
+    L.append(b'')
     L.append(content)
-    L.append('--' + BOUNDARY + '--')
-    L.append('')
+    L.append(b'--' + BOUNDARY + b'--')
+    L.append(b'')
     body = CRLF.join(L)
 
     data = lfasr_post(api_upload, body, multi_header)
@@ -206,7 +206,7 @@ class SliceIdGenerator:
 
 def request_lfasr_result():
     # 1.预处理
-    pr = prepare()
+    pr = prepare().decode('utf-8')
     prepare_result = json.loads(pr)
     if prepare_result['ok'] != 0:
         print('prepare error, ' + pr)
@@ -250,6 +250,7 @@ def request_lfasr_result():
     # 5.获取结果
     lfasr_result = json.loads(get_result(taskid))
     print("result: " + lfasr_result['data'])
+    return lfasr_result
 
 
 if __name__ == '__main__':
