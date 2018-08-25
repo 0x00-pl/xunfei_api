@@ -25,7 +25,7 @@ api_get_result = '/getResult'
 # 文件分片大下52k
 file_piece_sice = 10485760
 # 要是转写的文件路径
-uplaod_file_path = sys.argv[1]
+upload_file_path = sys.argv[1]
 
 base_header = {'Content-type': 'application/x-www-form-urlencoded', 'Accept': 'application/json;charset=utf-8'}
 
@@ -44,12 +44,12 @@ max_alternatives = 0
 suid = ''
 
 
-def prepare():
-    return lfasr_post(api_prepare, urllib.parse.urlencode(generate_request_param(api_prepare)), base_header)
+def prepare(upload_file_path):
+    return lfasr_post(api_prepare, urllib.parse.urlencode(generate_request_param(api_prepare, upload_file_path=upload_file_path)), base_header)
 
 
-def upload(taskid):
-    file_object = open(uplaod_file_path, 'rb')
+def upload(taskid, upload_file_path):
+    file_object = open(upload_file_path, 'rb')
     try:
         index = 1
         sig = SliceIdGenerator()
@@ -72,8 +72,8 @@ def upload(taskid):
     return True
 
 
-def merge(taskid):
-    return lfasr_post(api_merge, urllib.parse.urlencode(generate_request_param(api_merge, taskid)), base_header)
+def merge(taskid, upload_file_path):
+    return lfasr_post(api_merge, urllib.parse.urlencode(generate_request_param(api_merge, taskid, upload_file_path=upload_file_path)), base_header)
 
 
 def get_progress(taskid):
@@ -87,7 +87,7 @@ def get_result(taskid):
 
 
 # 根据请求的api来生成请求参数
-def generate_request_param(apiname, taskid=None, slice_id=None):
+def generate_request_param(apiname, taskid=None, slice_id=None, upload_file_path=None):
     # 生成签名与时间戳
     ts = str(int(time.time()))
     tmp = app_id + ts
@@ -99,8 +99,8 @@ def generate_request_param(apiname, taskid=None, slice_id=None):
 
     # 根据请求的api_name生成请求具体的请求参数
     if apiname == api_prepare:
-        file_len = os.path.getsize(uplaod_file_path)
-        parentpath, shotname, extension = get_file_msg(uplaod_file_path)
+        file_len = os.path.getsize(upload_file_path)
+        parentpath, shotname, extension = get_file_msg(upload_file_path)
         file_name = shotname + extension
         temp1 = file_len / file_piece_sice
         slice_num = int(round(file_len / file_piece_sice + (0 if (file_len % file_piece_sice == 0) else 1)))
@@ -128,7 +128,7 @@ def generate_request_param(apiname, taskid=None, slice_id=None):
         param_dict['signa'] = signa
         param_dict['ts'] = ts
         param_dict['task_id'] = taskid
-        parentpath, shotname, extension = get_file_msg(uplaod_file_path)
+        parentpath, shotname, extension = get_file_msg(upload_file_path)
         file_name = shotname + extension
         param_dict['file_name'] = file_name
     elif apiname == api_get_progress or apiname == api_get_result:
@@ -140,8 +140,8 @@ def generate_request_param(apiname, taskid=None, slice_id=None):
 
 
 def get_file_msg(filepath):
-    (parentpath, tempfilename) = os.path.split(filepath);
-    (shotname, extension) = os.path.splitext(tempfilename);
+    (parentpath, tempfilename) = os.path.split(filepath)
+    (shotname, extension) = os.path.splitext(tempfilename)
     return parentpath, shotname, extension
 
 
@@ -204,9 +204,9 @@ class SliceIdGenerator:
         return self.__ch
 
 
-def request_lfasr_result():
+def request_lfasr_result(upload_file_path):
     # 1.预处理
-    pr = prepare().decode('utf-8')
+    pr = prepare(upload_file_path).decode('utf-8')
     prepare_result = json.loads(pr)
     if prepare_result['ok'] != 0:
         print('prepare error, ' + pr)
@@ -216,13 +216,13 @@ def request_lfasr_result():
     print('prepare success, taskid: ' + taskid)
 
     # 2.分片上传文件
-    if upload(taskid):
-        print('uplaod success')
+    if upload(taskid, upload_file_path):
+        print('upload success')
     else:
         print('uoload fail')
 
     # 3.文件合并
-    mr = merge(taskid)
+    mr = merge(taskid, upload_file_path)
     merge_result = json.loads(mr)
     if merge_result['ok'] != 0:
         print('merge fail, ' + mr)
@@ -254,4 +254,4 @@ def request_lfasr_result():
 
 
 if __name__ == '__main__':
-    request_lfasr_result()
+    request_lfasr_result(upload_file_path)
