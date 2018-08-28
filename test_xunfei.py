@@ -210,7 +210,7 @@ def request_lfasr_result(upload_file_path):
     prepare_result = json.loads(pr)
     if prepare_result['ok'] != 0:
         print('prepare error, ' + pr)
-        return
+        return prepare_result
 
     taskid = prepare_result['data']
     print('prepare success, taskid: ' + taskid)
@@ -226,7 +226,7 @@ def request_lfasr_result(upload_file_path):
     merge_result = json.loads(mr)
     if merge_result['ok'] != 0:
         print('merge fail, ' + mr)
-        return
+        return merge_result
 
     # 4.获取任务进度
     while True:
@@ -235,7 +235,7 @@ def request_lfasr_result(upload_file_path):
         progress_dic = json.loads(progress)
         if progress_dic['err_no'] != 0 and progress_dic['err_no'] != 26605:
             print('task error: ' + progress_dic['failed'])
-            return
+            return progress_dic
         else:
             data = progress_dic['data']
             task_status = json.loads(data)
