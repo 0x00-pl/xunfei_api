@@ -230,6 +230,7 @@ def request_lfasr_result(upload_file_path):
 
     # 4.获取任务进度
     while True:
+        time.sleep(5)
         # 每隔20秒获取一次任务进度
         progress = get_progress(taskid)
         progress_dic = json.loads(progress)
