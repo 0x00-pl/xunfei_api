@@ -18,7 +18,11 @@ def get_file_list(path_prefix):
 
 def run_request(args):
     wav_path, output_json_path = args
-    res = test_xunfei.request_lfasr_result(wav_path)
+    try:
+        res = test_xunfei.request_lfasr_result(wav_path)
+    except:
+        res = {"err": "internal unknown error, in python."}
+
     output_path, filename = os.path.split(output_json_path)
     os.makedirs(output_path, exist_ok=True)
     json.dump(res, open(output_json_path, 'w'))
@@ -26,8 +30,8 @@ def run_request(args):
 
 def main():
     wav_list = list(get_file_list(sys.argv[1]))
-    json_list = [os.path.join('log', wav_path+'.log') for wav_path in wav_list]
-    with Pool(processes=1) as pool:
+    json_list = [os.path.join('log', wav_path + '.log') for wav_path in wav_list]
+    with Pool(processes=3) as pool:
         pool.map(run_request, zip(wav_list, json_list))
 
 
