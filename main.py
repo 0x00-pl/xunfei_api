@@ -26,13 +26,16 @@ def run_request(args):
     output_path, filename = os.path.split(output_json_path)
     os.makedirs(output_path, exist_ok=True)
     json.dump(res, open(output_json_path, 'w'))
+    return int(res.get('err_no', '-1'))
 
 
 def main():
     wav_list = list(get_file_list(sys.argv[1]))
     json_list = [os.path.join('log', wav_path + '.log') for wav_path in wav_list]
     with Pool(processes=3) as pool:
-        pool.map(run_request, zip(wav_list, json_list))
+        result_summary = pool.map(run_request, zip(wav_list, json_list))
+
+    print('result_summary:', result_summary)
 
 
 if __name__ == '__main__':
