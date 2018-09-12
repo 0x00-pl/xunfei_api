@@ -3,7 +3,9 @@ import sys
 import json
 from multiprocessing import Pool
 import test_xunfei
+import tqdm
 
+bar = None
 
 def get_file_list(path_prefix):
     file_list = os.listdir(path_prefix)
@@ -26,15 +28,20 @@ def run_request(args):
     output_path, filename = os.path.split(output_json_path)
     os.makedirs(output_path, exist_ok=True)
     json.dump(res, open(output_json_path, 'w'))
+    bar.update()
     return int(res.get('err_no', '-1'))
 
 
 def main():
     wav_list = list(get_file_list(sys.argv[1]))
     json_list = [os.path.join('log', wav_path + '.log') for wav_path in wav_list]
+
+    global bar
+    bar = tqdm.tqdm(total=len(wav_list))
     with Pool(processes=3) as pool:
         result_summary = pool.map(run_request, zip(wav_list, json_list))
 
+    bar.close()
     print('result_summary:', result_summary)
 
 
