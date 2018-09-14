@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
 
-import hashlib
-import sys
-from hashlib import sha1
-import hmac
 import base64
-import json, time
-import http.client, urllib.request, urllib.parse, urllib.error
+import hashlib
+import hmac
+import http.client
+import json
 import os
 import random
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from hashlib import sha1
 
 import secrets
 
@@ -45,7 +49,9 @@ suid = ''
 
 
 def prepare(upload_file_path):
-    return lfasr_post(api_prepare, urllib.parse.urlencode(generate_request_param(api_prepare, upload_file_path=upload_file_path)), base_header)
+    return lfasr_post(api_prepare,
+                      urllib.parse.urlencode(generate_request_param(api_prepare, upload_file_path=upload_file_path)),
+                      base_header)
 
 
 def upload(taskid, upload_file_path):
@@ -73,7 +79,8 @@ def upload(taskid, upload_file_path):
 
 
 def merge(taskid, upload_file_path):
-    return lfasr_post(api_merge, urllib.parse.urlencode(generate_request_param(api_merge, taskid, upload_file_path=upload_file_path)), base_header)
+    return lfasr_post(api_merge, urllib.parse.urlencode(
+        generate_request_param(api_merge, taskid, upload_file_path=upload_file_path)), base_header)
 
 
 def get_progress(taskid):
@@ -155,7 +162,9 @@ def lfasr_post(apiname, requestbody, header):
 
 
 def post_multipart_formdata(strparams, content):
-    BOUNDARY = b'----------%s' % b''.join(random.sample([b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'a', b'b', b'c', b'd', b'e', b'f'], 15))
+    BOUNDARY = b'----------%s' % b''.join(
+        random.sample([b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'a', b'b', b'c', b'd', b'e', b'f'],
+                      15))
     multi_header = {b'Content-type': b'multipart/form-data; boundary=%s' % BOUNDARY,
                     b'Accept': b'application/json;charset=utf-8'}
     CRLF = b'\r\n'
